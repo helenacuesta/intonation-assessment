@@ -166,7 +166,7 @@ def map_deviation_range(input_deviation, max_deviation=100):
 
 # ------------------------------------------------------------------------------------------ #
 
-def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voice, dev_thresh=100):
+def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voice, assessment, dev_thresh=100):
 
     '''Automatic assessment of the intonation of singing performances from the CSP platform of the TROMPA project.
 
@@ -194,8 +194,6 @@ def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voic
 
     '''
 
-    assessment = {}
-    assessment['pitchAssessment'] = []
 
     try:
 
@@ -335,20 +333,23 @@ def main(args):
     latency = data['latencyOffset']
 
     score_url = data['score']
+
+    assessment = {}
+    assessment['pitchAssessment'] = []
     try:
         _ = urllib.request.urlretrieve(score_url, './tmp/score.xml')
         score_path = './tmp/score.xml'
 
-        assessment, _ = intonation_assessment(startbar, endbar, latency, pitch_path, score_path, voice, dev_thresh=100)
-
-        #import pdb; pdb.set_trace()
+        assessment, _ = intonation_assessment(startbar, endbar, latency, pitch_path, score_path, voice, assessment, dev_thresh=100)
 
         save_json_data(assessment, performance_path.replace('.json', '_output.json'))
         #pd.DataFrame(assessment).to_json(performance_path.replace('.json', '_output.json'))
 
 
-    except Exception as e:
-        print(e)
+    except:
+
+        assessment['error'] = 'Could not read the score from the link.'
+        save_json_data(assessment, performance_path.replace('.json', '_output.json'))
 
 
 
