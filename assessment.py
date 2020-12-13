@@ -336,6 +336,8 @@ def main(args):
 
     assessment = {}
     assessment['pitchAssessment'] = []
+    assessment['error'] = None
+
     try:
         _ = urllib.request.urlretrieve(score_url, './tmp/score.xml')
         score_path = './tmp/score.xml'
@@ -351,13 +353,15 @@ def main(args):
         assessment['error'] = 'Could not read the score from the link.'
         save_json_data(assessment, performance_path.replace('.json', '_output.json'))
 
+    #return assessment['pitchAssessment'], assessment['error']
+
 
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Run the intonation assessment algorithm given the json input with info from the performance "
-                    "the json file with the F0 contour.")
+                    "and the json file with the F0 contour.")
 
     parser.add_argument("--performance",
                         dest='performance_path',

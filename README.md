@@ -19,15 +19,11 @@ In the current version, this script generates an **output json file** named `per
 in the same folder as the performance json. It contains a field *'pitchAssessment* that contains the output intonation 
 rating for each note if the analysis is successful, and a field *'error'* with an error message if the analysis fails.
 
-The *pitchAnalysis* field contains a list of arrays `[note_start_time, pitch_value]`.
+The *pitchAssessment* field contains a list of arrays `[note_start_time, pitch_value]`.
 
 #### Requirements
 **requirements.txt** contains the requirements to run the algorithm.
 
 
-## Data for testing
 
-The **examples** and **pitch** folders contain data from the first users of the CSP. Files in both folders have
-matching filenames, i.e., `examples/84.json` is the performance data from the performance 84, which has its
-corresponding pitch curve in `pitch/84.json`. 
 
