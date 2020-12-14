@@ -185,11 +185,15 @@ def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voic
 
     voice : (string) voice part as written in the score
 
+    assessment : (dictionary) empty python dictionary with two fields 'pitchAssessment' set to an empty list
+    and 'error' set to None.
+
     dev_thresh : (float) maximum allowed deviation in cents. Defaults to 100 cents
 
     Returns
     -------
-    assessment : (dictionary) with the assessment results for each note in the 'pitchAssessment' field \n
+    assessment : (dictionary) with the assessment results for each note in the 'pitchAssessment' field and and 'error'
+    field.
     overall_score : (float) overall intonation score computed as the weighted sum of note intonation scores
 
     '''
