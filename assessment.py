@@ -1,8 +1,5 @@
 '''Script for the automatic assessment of the intonation of monophonic singing.
-
-Expected usage:
-
-assessment.py --performance performance_data_84.json --pitch pitch_84.json
+Prototype for the CSP of the TROMPA project.
 
 '''
 
@@ -24,9 +21,7 @@ from mir_eval.util import midi_to_hz, intervals_to_samples
 import argparse
 import urllib.request
 
-# UTIL FUNCTIONS
 
-# ------------------------------------------------------------------------------------------ #
 def xml2midi(xmlfile):
 
     try:
@@ -43,8 +38,6 @@ def xml2midi(xmlfile):
 
     else:
         raise ValueError("Please input a valid score format: xml or mxl")
-
-# ------------------------------------------------------------------------------------------ #
 
 def midi_preparation(midifile):
     midi_data = dict()
@@ -71,8 +64,6 @@ def midi_preparation(midifile):
 
     return midi_data
 
-# ------------------------------------------------------------------------------------------ #
-
 def midi_to_trajectory(des_timebase, onsets, offsets, pitches):
 
     hop = des_timebase[2] - des_timebase[1]
@@ -83,8 +74,6 @@ def midi_to_trajectory(des_timebase, onsets, offsets, pitches):
                                                  offset=des_timebase[0], sample_size=hop, fill_value=0)
 
     return np.array(timebase), np.array(midipitches)
-
-# ------------------------------------------------------------------------------------------ #
 
 def parse_midi(score_fname, voice_shortcut):
 
@@ -106,20 +95,14 @@ def parse_midi(score_fname, voice_shortcut):
 
     return onsets, offsets, pitches, midi_data
 
-# ------------------------------------------------------------------------------------------ #
-
 def load_json_data(load_path):
     with open(load_path, 'r') as fp:
         data = json.load(fp)
     return data
 
-# ------------------------------------------------------------------------------------------ #
-
 def save_json_data(data, save_path):
     with open(save_path, 'w') as fp:
         json.dump(data, fp, indent=2)
-
-# ------------------------------------------------------------------------------------------ #
 
 def load_f0_contour(pitch_json_path, starttime):
 
@@ -146,8 +129,6 @@ def load_f0_contour(pitch_json_path, starttime):
 
     return times, freqs
 
-# ------------------------------------------------------------------------------------------ #
-
 
 def map_deviation_range(input_deviation, max_deviation=100):
     '''This function takes as input the deviation between the score and the performance in cents (as a ratio),
@@ -158,15 +139,14 @@ def map_deviation_range(input_deviation, max_deviation=100):
 
     score = np.clip(np.abs(input_deviation), 0, max_deviation) / float(max_deviation)
 
-    assert score <= 1, "Score value is above 1"
-    assert score >= 0, "Score value is below 0"
+    # assert score <= 1, "Score value is above 1"
+    # assert score >= 0, "Score value is below 0"
 
     return 1 - score
 
 
-# ------------------------------------------------------------------------------------------ #
 
-def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voice, assessment, dev_thresh=100):
+def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file, voice, output_filename, dev_thresh=100):
 
     '''Automatic assessment of the intonation of singing performances from the CSP platform of the TROMPA project.
 
@@ -179,43 +159,69 @@ def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voic
 
     offset : (float) measured latency between audio and score
 
-    pitch_json_path : (string) path to the json file with the pitch contour
+    pitch_json_file : (string) json file with the pitch contour
 
-    score_path : (string) path to the score in xml
+    score_file : (string) music score xml file
 
     voice : (string) voice part as written in the score
 
-    assessment : (dictionary) empty python dictionary with two fields 'pitchAssessment' set to an empty list
-    and 'error' set to None.
+    output_filename : (string) output filename to use for the assessment results file
 
     dev_thresh : (float) maximum allowed deviation in cents. Defaults to 100 cents
 
     Returns
     -------
-    assessment : (dictionary) with the assessment results for each note in the 'pitchAssessment' field and and 'error'
-    field.
-    overall_score : (float) overall intonation score computed as the weighted sum of note intonation scores
+
+    assessment : (dictionary) the field 'pitchAssessment' contains a list of arrays with the results for each note in
+    in the form [note_start_time, intonation_rating]. If the process fails, the list will be empty. The field 'error'
+    will contain a string with an error message if the process fails, and will be None if it's successful.
+
+    overall_score : (float) overall intonation score computed as the weighted sum of note intonation scores. Can be
+    ignored because it's not used by the CSP.
+
+    This function stores a json file with the assessment dictionary in the file indicated by the `output_filename`
+    parameter.
 
     '''
 
+    assessment = {}
+    assessment['pitchAssessment'] = []
+    assessment['error'] = None
 
     try:
 
         '''STEP 1: parse xml score, convert to MIDI and save 
         '''
-        # hack to deal with bariton voice with an accent, needs updating
+        # quick hack to deal with accents in the voice parts, needs to be updated
+        change_flag = 0
+        xml_data = m21.converter.parse(score_file)
+        #import pdb; pdb.set_trace()
+        for i in range(len(xml_data.parts)):
+            name = xml_data.parts[i].getInstrument().partName
+            if name != unidecode.unidecode(name):
+                change_flag = 1
+                xml_data.parts[i].getInstrument().partName = unidecode.unidecode(name)
 
-        if voice == 'Baríton':
-            xml_data = m21.converter.parse(score_path)
-            xml_data.parts[2].getInstrument().partName = 'Bariton'
-            xml_data.write('midi', score_path.replace('xml', 'mid'))
+        if change_flag != 0:
+            xml_data.write('midi', score_file.replace('xml', 'mid'))
 
         else:
-            xml2midi(score_path)
+            xml2midi(score_file)
+
+
+
+        #
+        # if voice == 'Baríton':
+        #     xml_data = m21.converter.parse(score_file)
+        #     xml_data.parts[2].getInstrument().partName = 'Bariton'
+        #     xml_data.write('midi', score_file.replace('xml', 'mid'))
+        #
+        # else:
+        #     xml2midi(score_file)
 
         '''STEP 2: parse MIDI file and arrange info
         '''
-        onsets, offsets, pitches, midi_data = parse_midi(score_path, unidecode.unidecode(voice))
+        onsets, offsets, pitches, midi_data = parse_midi(score_file, unidecode.unidecode(voice))
 
         '''STEP 3: parse the F0 contour and adjust according to latency
         '''
@@ -223,7 +229,7 @@ def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voic
         if offset >= 1:
             offset = 0.3
 
-        times, freqs = load_f0_contour(pitch_path, starttime=offset)
+        times, freqs = load_f0_contour(pitch_json_file, starttime=offset)
 
         '''STEP 4: Delimiting the performance in the score and the F0 curve
         '''
@@ -303,7 +309,6 @@ def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voic
                     [onsets[i], intonation_score]
             )
 
-        assert len(onsets) == len(assessment['pitchAssessment']), "Number of ratings differs from number of notes."
 
 
         # Idea for a weighted overall score
@@ -311,71 +316,28 @@ def intonation_assessment(startbar, endbar, offset, pitch_path, score_path, voic
         durations /= offsets[-1]
         overall_score = np.dot(ratings, durations)
 
+        '''Store the ratings in a json file
+        '''
+        if output_filename.endswith('json'):
+            save_json_data(assessment, output_filename)
+
+        else:
+            save_json_data(assessment, output_filename + '.json')
+
+
         return assessment, overall_score
 
     except:
-        print("Exception caught")
-        assessment['error'] = 'Process failed.'
+
+        assessment['error'] = 'Something went wrong during the assessment process.'
         overall_score = 0
+
+        if output_filename.endswith('json'):
+            save_json_data(assessment, output_filename)
+
+        else:
+            save_json_data(assessment, output_filename + '.json')
+
         return assessment, overall_score
 
 
-def main(args):
-    performance_path = args.performance_path
-    pitch_path = args.pitch_path
-
-    data = load_json_data(performance_path)
-
-
-    if not os.path.exists('./tmp'):
-        os.mkdir('./tmp')
-
-
-    startbar = data['startBar']
-    endbar = data['endBar']
-    voice = data['partName']
-    latency = data['latencyOffset']
-
-    score_url = data['score']
-
-    assessment = {}
-    assessment['pitchAssessment'] = []
-    assessment['error'] = None
-
-    try:
-        _ = urllib.request.urlretrieve(score_url, './tmp/score.xml')
-        score_path = './tmp/score.xml'
-
-        assessment, _ = intonation_assessment(startbar, endbar, latency, pitch_path, score_path, voice, assessment, dev_thresh=100)
-
-        save_json_data(assessment, performance_path.replace('.json', '_output.json'))
-        #pd.DataFrame(assessment).to_json(performance_path.replace('.json', '_output.json'))
-
-
-    except:
-
-        assessment['error'] = 'Could not read the score from the link.'
-        save_json_data(assessment, performance_path.replace('.json', '_output.json'))
-
-    #return assessment['pitchAssessment'], assessment['error']
-
-
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Run the intonation assessment algorithm given the json input with info from the performance "
-                    "and the json file with the F0 contour.")
-
-    parser.add_argument("--performance",
-                        dest='performance_path',
-                        type=str,
-                        help="Path to the json file with the performance data.")
-
-    parser.add_argument("--pitch",
-                        dest='pitch_path',
-                        type=str,
-                        help="Path to the json file with the F0 contour.")
-
-
-    main(parser.parse_args())
