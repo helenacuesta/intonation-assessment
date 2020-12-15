@@ -271,6 +271,9 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
         ref_times, ref_freqs = midi_to_trajectory(times[st_idx:end_idx] + starting, onsets, offsets, pitches)
         times += ref_times[0]
 
+        # resampling timebase because of irregular steps
+        times = np.linspace(times[0], times[-1], len(times))
+
         # Resample to the same timebase. We use the reference timebase
         freqs, voicing = mir_eval.melody.freq_to_voicing(freqs)
         est_freqs, _ = mir_eval.melody.resample_melody_series(times, freqs, voicing, ref_times, kind='nearest')
@@ -287,7 +290,12 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
             note_start, note_end = region_idxs[0], region_idxs[-1]
 
             # compute deviation frame-wise
+            # replace 0 by eps for the log
+
             if pitches[i] < eps: pitches[i] = eps
+
+            est_freqs[note_start:note_end][est_freqs[note_start:note_end] <= 0] = eps
+
             devs = 1200.0 * np.log2(est_freqs[note_start:note_end] / pitches[i])
 
             note_median_dev = np.median(devs)
