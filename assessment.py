@@ -5,7 +5,6 @@ Prototype for the CSP of the TROMPA project.
 
 import sys
 eps = sys.float_info.epsilon
-import os
 import json
 
 import numpy as np
