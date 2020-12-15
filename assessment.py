@@ -19,7 +19,6 @@ import unidecode
 from mir_eval.util import midi_to_hz, intervals_to_samples
 
 import argparse
-import urllib.request
 
 
 def xml2midi(xmlfile):
@@ -341,3 +340,66 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
         return assessment, overall_score
 
 
+def main(args):
+
+    startbar = args.startbar
+    endbar = args.endbar
+    offset = args.offset
+    pitch_json_file = args.pitch_json
+    score_file = args.score_file
+    voice = args.voice
+    output_filename = args.output_filename
+    dev_threshold = args.dev_threshold
+
+    _, _ = intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file, voice,
+                                 output_filename, dev_thresh=dev_threshold)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Run the intonation assessment algorithm given the json input with info from the performance "
+                    "and the json file with the F0 contour.")
+
+    parser.add_argument("--start_bar",
+                        dest='startbar',
+                        type=int,
+                        help="Start bar of the performance.")
+
+    parser.add_argument("--end_bar",
+                        dest='endbar',
+                        type=int,
+                        help="End bar of the performance.")
+
+    parser.add_argument("--latency",
+                        dest='offset',
+                        type=float,
+                        help="Estimated latency offset between the score and the performance.")
+
+    parser.add_argument("--pitch_json",
+                        dest='pitch_json',
+                        type=str,
+                        help="Filename of the json file containing the pitch curve.")
+
+    parser.add_argument("--score_file",
+                        dest='score_file',
+                        type=str,
+                        help="Filename of the xmlfile containing with the score.")
+
+    parser.add_argument("--voice",
+                        dest='voice',
+                        type=str,
+                        help="Voice part of the singer.")
+
+    parser.add_argument("--output_filename",
+                        dest='output_filename',
+                        type=str,
+                        help="Filename of the results output file.")
+
+    parser.add_argument("--dev_threshold",
+                        dest='dev_threshold',
+                        type=float,
+                        default=100.0,
+                        help="Maximum allowed deviation from the score in cents. Defaults to 100.")
+
+
+    main(parser.parse_args())
