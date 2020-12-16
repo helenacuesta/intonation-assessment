@@ -20,24 +20,29 @@ from mir_eval.util import midi_to_hz, intervals_to_samples
 import argparse
 
 
-def xml2midi(xmlfile):
+def xml2midi(xmlfile, format):
 
     try:
-        score = m21.converter.parseFile(xmlfile)
+        score = m21.converter.parseFile(xmlfile, format=format)
 
     except:
-        raise ValueError("Can not parse the score. Aborting assessment...")
+        raise RuntimeError("Can not parse the {} score.".format(format))
 
-    if xmlfile.endswith('xml'):
-        score.write('midi', xmlfile.replace('xml', 'mid'))
+    try:
+        score.write('midi', '{}.mid'.format(xmlfile))
 
-    elif xmlfile.endswith('mxl'):
-        score.write('midi', xmlfile.replace('mxl', 'mid'))
+    # if xmlfile.endswith('xml'):
+    #     score.write('midi', xmlfile.replace('xml', 'mid'))
+    #
+    # elif xmlfile.endswith('mxl'):
+    #     score.write('midi', xmlfile.replace('mxl', 'mid'))
 
-    else:
-        raise ValueError("Please input a valid score format: xml or mxl")
+    except:
+        raise RuntimeError("Could not convert {} to MIDI.".format(format))
+
 
 def midi_preparation(midifile):
+
     midi_data = dict()
     midi_data['onsets'] = dict()
     midi_data['offsets'] = dict()
@@ -73,18 +78,15 @@ def midi_to_trajectory(des_timebase, onsets, offsets, pitches):
 
     return np.array(timebase), np.array(midipitches)
 
-def parse_midi(score_fname, voice_shortcut):
+def parse_midi(score_fname, voice_shortcut, format):
 
     voice_shortcut = unidecode.unidecode(voice_shortcut)
 
-    if score_fname.endswith('xml'):
-        midi_data = midi_preparation(score_fname.replace('xml', 'mid'))
+    try:
+        midi_data = midi_preparation("{}.mid".format(score_fname))
 
-    elif score_fname.endswith('mxl'):
-        midi_data = midi_preparation(score_fname.replace('mxl', 'mid'))
-
-    else:
-        raise ValueError("Invalid score format. Found {} but expected {} or {}".format(score_fname[-3:], 'xml', 'mxl'))
+    except:
+        raise RuntimeError("Could not parse converted MIDI file".format(score_fname))
 
     onsets = np.array(midi_data['onsets'][voice_shortcut])
 
@@ -144,7 +146,7 @@ def map_deviation_range(input_deviation, max_deviation=100):
 
 
 
-def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file, voice, output_filename, dev_thresh=100):
+def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file, voice, output_filename, dev_thresh=100, format='xml'):
 
     '''Automatic assessment of the intonation of singing performances from the CSP platform of the TROMPA project.
 
@@ -192,8 +194,8 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
         '''
         # quick hack to deal with accents in the voice parts, needs to be updated
         change_flag = 0
-        xml_data = m21.converter.parse(score_file)
-        #import pdb; pdb.set_trace()
+        xml_data = m21.converter.parse(score_file, format=format)
+
         for i in range(len(xml_data.parts)):
             name = xml_data.parts[i].getInstrument().partName
             if name != unidecode.unidecode(name):
@@ -201,13 +203,17 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
                 xml_data.parts[i].getInstrument().partName = unidecode.unidecode(name)
 
         if change_flag != 0:
-            xml_data.write('midi', score_file.replace('xml', 'mid'))
+
+            try:
+                xml_data.write('midi', "{}.mid".format(score_file))
+
+            except:
+                raise RuntimeError("Could not convert modified {} to MIDI.".format(format))
 
         else:
-            xml2midi(score_file)
+            xml2midi(score_file, format=format)
 
-
-
+        import pdb; pdb.set_trace()
         #
         # if voice == 'Baríton':
         #     xml_data = m21.converter.parse(score_file)
@@ -219,7 +225,7 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
 
         '''STEP 2: parse MIDI file and arrange info
         '''
-        onsets, offsets, pitches, midi_data = parse_midi(score_file, unidecode.unidecode(voice))
+        onsets, offsets, pitches, midi_data = parse_midi(score_file, unidecode.unidecode(voice), format)
 
         '''STEP 3: parse the F0 contour and adjust according to latency
         '''
@@ -324,12 +330,7 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
 
         '''Store the ratings in a json file
         '''
-        if output_filename.endswith('json'):
-            save_json_data(assessment, output_filename)
-
-        else:
-            save_json_data(assessment, output_filename + '.json')
-
+        save_json_data(assessment, output_filename)
 
         return assessment, overall_score
 
@@ -338,11 +339,7 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
         assessment['error'] = 'Something went wrong during the assessment process.'
         overall_score = 0
 
-        if output_filename.endswith('json'):
-            save_json_data(assessment, output_filename)
-
-        else:
-            save_json_data(assessment, output_filename + '.json')
+        save_json_data(assessment, output_filename)
 
         return assessment, overall_score
 
@@ -357,9 +354,10 @@ def main(args):
     voice = args.voice
     output_filename = args.output_filename
     dev_threshold = args.dev_threshold
+    score_format = args.score_format
 
     _, _ = intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file, voice,
-                                 output_filename, dev_thresh=dev_threshold)
+                                 output_filename, dev_thresh=dev_threshold, format=score_format)
 
 
 if __name__ == "__main__":
@@ -407,6 +405,12 @@ if __name__ == "__main__":
                         type=float,
                         default=100.0,
                         help="Maximum allowed deviation from the score in cents. Defaults to 100.")
+
+    parser.add_argument("--format",
+                        dest='score_format',
+                        type=str,
+                        default='xml',
+                        help="Format of the score. Defaults to XML.")
 
 
     main(parser.parse_args())
