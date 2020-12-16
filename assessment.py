@@ -213,7 +213,7 @@ def intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file,
         else:
             xml2midi(score_file, format=format)
 
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         #
         # if voice == 'Baríton':
         #     xml_data = m21.converter.parse(score_file)
