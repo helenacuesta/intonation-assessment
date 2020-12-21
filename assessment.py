@@ -360,10 +360,10 @@ def main(args):
 
     config = configparser.ConfigParser()
     config.add_section('tplout')
-    config.set('tplout', 'output', '{}'.format(output_filename))
+    config.set('tplout', 'output_filename', '{}'.format(output_filename))
 
     # save config to ini file
-    with open('{}.ini'.format(tpl_output), 'w') as configfile:
+    with open('{}'.format(tpl_output), 'w') as configfile:
         config.write(configfile)
 
     _, _ = intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file, voice,
