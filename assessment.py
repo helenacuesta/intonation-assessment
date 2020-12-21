@@ -18,6 +18,7 @@ import unidecode
 from mir_eval.util import midi_to_hz, intervals_to_samples
 
 import argparse
+import configparser
 
 
 def xml2midi(xmlfile, format):
@@ -355,6 +356,15 @@ def main(args):
     output_filename = args.output_filename
     dev_threshold = args.dev_threshold
     score_format = args.score_format
+    tpl_output = args.tpl_output
+
+    config = configparser.ConfigParser()
+    config.add_section('tplout')
+    config.set('tplout', 'output', '{}'.format(output_filename))
+
+    # save config to ini file
+    with open('{}.ini'.format(tpl_output), 'w') as configfile:
+        config.write(configfile)
 
     _, _ = intonation_assessment(startbar, endbar, offset, pitch_json_file, score_file, voice,
                                  output_filename, dev_thresh=dev_threshold, format=score_format)
@@ -399,6 +409,11 @@ if __name__ == "__main__":
                         dest='output_filename',
                         type=str,
                         help="Filename of the results output file.")
+
+    parser.add_argument("--tpl_out",
+                        dest='tpl_output',
+                        type=str,
+                        help="Path of the config ini file.")
 
     parser.add_argument("--dev_threshold",
                         dest='dev_threshold',
