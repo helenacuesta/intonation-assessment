@@ -410,7 +410,7 @@ if __name__ == "__main__":
                         type=str,
                         help="Filename of the results output file.")
 
-    parser.add_argument("--tpl_out",
+    parser.add_argument("--tpl-out",
                         dest='tpl_output',
                         type=str,
                         help="Path of the config ini file.")
