@@ -1,6 +1,6 @@
 # Intonation Assessment v0
 
-This is a work in progress.
+This is a work in progress. The documentation in this readme is now outdated, will be updated in the following weeks.
 
 Helena Cuesta (helena.cuesta@upf.edu)
 
