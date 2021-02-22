@@ -1,25 +1,36 @@
-# Intonation Assessment v0
+# Intonation Assessment v
 
-This is a work in progress. The documentation in this readme is now outdated, will be updated in the following weeks.
+This repo contains code for the automatic assessment of the intonation of singing performances.
+It's developed for the Choir Singers Platform - Cantamus from the TROMPA project.
 
-Helena Cuesta (helena.cuesta@upf.edu)
+## Description 
 
-This repo contains (work in progress) code for the automatic assessment of the intonation of singing performances.
-It's developed for the Choir Singers Platform of the TROMPA project.
+Choir singers often rehearse their parts individually at home.
+While this is a good way if practicing challenging parts in more depth, the figure of the conductor is missing.
+Therefore, the singer does not get any feedback about their performance.
 
-## Documentation 
+In the context of the Cantamus platform from TROMPA (https://cantamus.app/), we developed a simple algorithm
+to provide feedback to the singer in terms of the intonation accuracy of their performance, on a note basis.
 
-The main function is `intonation_assessment`, inside the `assessment.py` script.
+This algorithm is integrated as part of the TROMPA Processing Library (TPL), and therefore its development and I/O
+follow specific requirements.
 
-This function has the following input parameters:
+The assessment algorithm is implemented in the core function `intonation_assessment`, inside the `assessment.py` script.
+The algorithm takes several data from the score and the performance (see next section), and computes the average 
+deviation of the singers' pitch from the reference pitch, given by the score.
 
-### Input parameters
+After singing, the user receives the feedback in the form of a color-coded piano-roll, where the _transparency_ of 
+each note refers to how _accurate_ each note was performed.
+
+The `intonation_assessment` function has the following input parameters:
+
+## Input parameters
 
     startbar : (int) indicates the first bar of the performance
 
     endbar : (int) indicates the last bar of the performance
 
-    offset : (float) measured latency between audio and score
+    offset : (float) estimated latency between audio and score
 
     pitch_json_file : (string) filename of the json file with the pitch contour
 
@@ -30,27 +41,23 @@ This function has the following input parameters:
     output_filename : (string) output filename to use for the assessment results file
 
     dev_thresh : (float) maximum allowed deviation in cents. Defaults to 100 cents
+    
+    score_format: (string) specify the format of the input score if not XML
+    
+    tpl_output: (string) filename of the output config file with the path to the output results
 
 
 ### Output parameters
 
-    assessment : (dictionary) the field 'pitchAssessment' contains a list of arrays with the results for each note in
-    in the form [note_start_time, intonation_rating]. If the process fails, the list will be empty. The field 'error'
-    will contain a string with an error message if the process fails, and will be None if it's successful.
+The main function generates two output files (real filenames are given as input parameters): 
+`output_filename.json` and `tpl_output.ini`.
 
-    overall_score : (float) overall intonation score computed as the weighted sum of note intonation scores. Can be
-    ignored because it's not used by the CSP.
-    
- 
-*Note: The `overall_score` output is a preliminary attempt to compute an intonation score the for whole performance. 
-Since this is not used by the rehearsal platform, the variable can be ignored for now.*
+The JSON file (`output_filename.json`) contains the actual assessment results: a Python dictionary with two fields.
+The first one, **'pitchAssessment'**, contains a list of arrays with the assessment results for each note in
+in the form:
+```
+[note_start_time, intonation_rating]
+```
+If the process fails, the list will be empty. 
 
-### Output json file
-
-In the current version, this script stores an **json file** as `output_filename.json` with the assessment results.
-This json file has two fields: `pitchAssessment` and `error`.
-
-The  `pitchAssessment` field contains a list of tuples `[note_start_time, pitch_value]`, with as many tuples as notes
-in the performance. If the process fails, the list is empty.
-
-The `error` field is None if the process is successful, and contains an error message string if it fails.
+The field **'error'** will contain a string with an error message if the process fails, and will be None if it's successful.
