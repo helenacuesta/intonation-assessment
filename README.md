@@ -1,4 +1,4 @@
-# Intonation Assessment v
+# Intonation Assessment
 
 This repo contains code for the automatic assessment of the intonation of singing performances.
 It's developed for the Choir Singers Platform - Cantamus from the TROMPA project.
