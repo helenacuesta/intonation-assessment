@@ -5,12 +5,12 @@ It's developed for the Choir Singers Platform - Cantamus from the TROMPA project
 
 ## Description 
 
-Choir singers often rehearse their parts individually at home.
-While this is a good way if practicing challenging parts in more depth, the figure of the conductor is missing.
+Choir singers often rehearse their parts individually at home. 
+While this is an excellent way to practice challenging parts in more depth, the conductor's figure is missing.
 Therefore, the singer does not get any feedback about their performance.
 
 In the context of the Cantamus platform from TROMPA (https://cantamus.app/), we developed a simple algorithm
-to provide feedback to the singer in terms of the intonation accuracy of their performance, on a note basis.
+to provide feedback to the singer in terms of their performance's intonation accuracy on a note basis.
 
 This algorithm is integrated as part of the TROMPA Processing Library (TPL), and therefore its development and I/O
 follow specific requirements.
